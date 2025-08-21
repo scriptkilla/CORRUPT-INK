@@ -13,7 +13,9 @@
       body {
         font-family: 'Roboto', sans-serif;
         background-color: #111;
-        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39sbGxra2uBAQEFAQEFBgYLCwsPDw8THx8aGxsuKiopKSmZlFrwAAAANklEQVR42u3PNwEAIADIQMH//+TjMeSdnGaCFSjS2vrc9HgtYqJpeBfFnA81zLwuPY2N7aDDIWHDggULFixY8Al4AADOaA0nAh8tAAAAAElFTkSuQmCC');
+        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39sbGxra2uBAQEFAQEFBgYLCwsPDw8THx8aGxsuKiopKSmZlFrwAAAANklEQVR42u3PNwEAIADIQMH//+TjMeSdnGaCFSjS2vrc9HgtYqJpeBfFnA81zLwuPY2N7aDDIWHDggULFixY8Al4AADOaA0nAh8tAAAAAElFTSuQmCC');
+        /* Hiding the default cursor for custom trail effect */
+        cursor: none;
       }
       .font-pirata {
         font-family: 'Pirata One', cursive;
@@ -24,6 +26,79 @@
       }
       .animate-fade-in {
         animation: fadeIn 0.5s ease-out forwards;
+      }
+
+      /* --- INTERACTIVITY STYLES --- */
+
+      /* Custom Cursor Trail */
+      .cursor-dot, .cursor-dot-outline {
+        pointer-events: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        border-radius: 50%;
+        opacity: 0;
+        transform: translate(-50%, -50%);
+        transition: opacity 0.3s ease-in-out, transform 0.2s ease-in-out;
+        z-index: 9999;
+      }
+      .cursor-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #ef4444; /* red-500 */
+      }
+      .cursor-dot-outline {
+        width: 40px;
+        height: 40px;
+        background-color: rgba(239, 68, 68, 0.3);
+      }
+      body:hover .cursor-dot,
+      body:hover .cursor-dot-outline {
+        opacity: 1;
+      }
+      a, button {
+        cursor: none;
+      }
+
+      /* On-Scroll Reveal Animation */
+      .reveal {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition-delay: 0.1s;
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      
+      /* Interactive Glow Effect for Cards */
+      .glow-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        transition: border-color 0.3s ease;
+      }
+      .glow-card::before {
+        content: '';
+        position: absolute;
+        width: 250px;
+        height: 250px;
+        top: var(--mouse-y, 50%);
+        left: var(--mouse-x, 50%);
+        background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0) 70%);
+        pointer-events: none;
+        opacity: 0;
+        transform: translate(-50%, -50%);
+        transition: opacity 0.4s ease, top 0.1s linear, left 0.1s linear;
+        z-index: 0;
+      }
+      .glow-card:hover::before {
+        opacity: 1;
+      }
+      .glow-card > * {
+        position: relative;
+        z-index: 1;
       }
     </style>
   <script type="importmap">

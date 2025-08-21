@@ -2,6 +2,68 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { galleryImages } from './gallery-images';
 
+// --- INTERACTIVITY HOOKS & COMPONENTS ---
+
+/**
+ * Custom hook to track mouse position.
+ */
+const useMousePosition = () => {
+    const [position, setPosition] = useState({ x: -100, y: -100 });
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            setPosition({ x: e.clientX, y: e.clientY });
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
+    return position;
+};
+
+/**
+ * Component to render a custom cursor trail effect.
+ */
+const CursorTrail: React.FC = () => {
+    const { x, y } = useMousePosition();
+    return (
+        <>
+            <div className="cursor-dot-outline" style={{ left: `${x}px`, top: `${y}px` }}></div>
+            <div className="cursor-dot" style={{ left: `${x}px`, top: `${y}px` }}></div>
+        </>
+    );
+};
+
+/**
+ * Custom hook to detect if an element is on screen.
+ */
+const useOnScreen = (ref: React.RefObject<HTMLElement>, options: IntersectionObserverInit = { threshold: 0.2 }) => {
+    const [isIntersecting, setIntersecting] = useState(false);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                setIntersecting(true);
+                observer.unobserve(entry.target);
+            }
+        }, options);
+
+        const currentRef = ref.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [ref, options]);
+
+    return isIntersecting;
+};
+
+
 // --- TYPES ---
 interface Artist {
   id: number;
@@ -78,7 +140,7 @@ const blogPosts: BlogPost[] = [
         title: 'The Timeless Appeal of Neo Traditional Tattoos',
         author: 'Thomas Darrow',
         date: 'October 26, 2023',
-        imageUrl: 'https://picsum.photos/seed/blog1/1200/800',
+        imageUrl: 'https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg',
         summary: 'Dive deep into the world of Neo Traditional tattoos. Discover its history, key characteristics, and why it remains one of the most beloved styles in modern tattooing.',
         content: `Neo Traditional tattooing is a beautiful evolution of the classic American Traditional style. While it holds onto the core principles of its predecessor—bold lines, a limited but vibrant color palette, and iconic imagery like skulls, roses, and daggers—it introduces a level of detail and dimensionality that sets it apart.\n\nKey characteristics include illustrative qualities, more depth through shading and color blending, and a broader range of subject matter, often drawing from Art Nouveau and Art Deco aesthetics. The result is a tattoo that feels both classic and contemporary, rich with history yet perfectly suited for the modern collector. At Corrupt Ink, we have a deep respect for this style, blending its timeless rules with our own artistic vision to create pieces that are truly unique.`
     },
@@ -87,7 +149,7 @@ const blogPosts: BlogPost[] = [
         title: 'Aftercare 101: Protecting Your Investment',
         author: 'Thomas Darrow',
         date: 'October 15, 2023',
-        imageUrl: 'https://picsum.photos/seed/blog2/1200/800',
+        imageUrl: 'https://images.pexels.com/photos/6593511/pexels-photo-6593511.jpeg',
         summary: 'A new tattoo is an open wound and a piece of art. Proper aftercare is crucial for it to heal beautifully and stand the test of time. Here are the essentials.',
         content: `Getting the tattoo is only half the battle; the other half is healing it correctly. Your aftercare routine is the single most important factor in how your tattoo will look for years to come.\n\nFirst, always listen to your artist's specific instructions. Generally, you'll want to keep the tattoo clean with a mild, fragrance-free soap and lukewarm water. Pat it dry gently with a paper towel—don't rub it. Apply a very thin layer of the recommended aftercare ointment. Too much ointment can suffocate the tattoo and clog pores.\n\nFor the first few weeks, avoid sun exposure, soaking in water (no pools, hot tubs, or baths), and picking at any scabs that form. Let the skin heal naturally. Your patience will be rewarded with a vibrant, sharp tattoo that you can be proud of for a lifetime.`
     },
@@ -96,9 +158,99 @@ const blogPosts: BlogPost[] = [
         title: 'From Concept to Skin: The Tattoo Design Process',
         author: 'Thomas Darrow',
         date: 'October 1, 2023',
-        imageUrl: 'https://picsum.photos/seed/blog3/1200/800',
+        imageUrl: 'https://images.pexels.com/photos/6593455/pexels-photo-6593455.jpeg',
         summary: 'Ever wonder how a vague idea becomes a permanent piece of art on your body? We pull back the curtain on the collaborative journey of tattoo design.',
         content: `The journey of a tattoo begins long before the needle touches the skin. It starts with an idea, a feeling, or a story you want to tell.\n\n1.  **Consultation:** This is the most critical step. We sit down together and discuss your ideas, placement, size, and style. Bringing reference photos is incredibly helpful, but the goal isn't to copy; it's to find a direction. We'll talk about what the piece means to you, which helps us infuse it with the right emotion.\n\n2.  **Drawing & Refinement:** Based on our consultation, I'll create a custom design. This is where the artistic magic happens, translating our conversation into a visual concept. We'll review the design together, and you'll have the opportunity to request changes. We'll refine it until it's perfect.\n\n3.  **The Appointment:** Once the design is finalized, we schedule the tattoo session. I prepare the stencil, and we confirm the placement on your body. Only when you are 100% happy do we begin the process of making it permanent. It's a collaboration from start to finish.`
+    },
+    {
+        id: 4,
+        title: 'The Power of Blackwork: More Than Just Black Ink',
+        author: 'Thomas Darrow',
+        date: 'September 25, 2023',
+        imageUrl: 'https://images.pexels.com/photos/4125661/pexels-photo-4125661.jpeg',
+        summary: 'Explore the bold and dramatic world of Blackwork tattoos. From intricate geometric patterns to solid, statement pieces, discover the versatility of this ancient style.',
+        content: `Blackwork is a broad and captivating category of tattooing that uses only black ink to create anything from minimalist designs to complex, sprawling patterns. Its roots are ancient, found in tribal tattoos across the world, but its modern application is incredibly diverse.\n\nYou'll see Blackwork in geometric dotwork, intricate mandalas, solid black "blast-overs" that cover old tattoos, and bold, graphic illustrations. The style is defined by its high contrast and powerful visual impact. It's a statement of confidence, a commitment to form and shadow over color. Whether you're drawn to delicate linework or a fully blacked-out sleeve, Blackwork offers a timeless and striking aesthetic.`
+    },
+    {
+        id: 5,
+        title: 'Choosing Your First Tattoo: A Beginner\'s Guide',
+        author: 'Thomas Darrow',
+        date: 'September 18, 2023',
+        imageUrl: 'https://images.pexels.com/photos/6593420/pexels-photo-6593420.jpeg',
+        summary: 'Feeling excited but overwhelmed about your first tattoo? This guide will walk you through the key considerations, from design and placement to finding the right artist.',
+        content: `Getting your first tattoo is a rite of passage. To ensure it's a positive experience, a little planning goes a long way. First, think about the "what" and "why." Choose a design that is meaningful to you, something you'll be happy to see every day. Don't rush this part.\n\nNext, consider placement. Do you want it to be visible or private? Some areas are more painful than others (ribs, feet) while some are easier for a first-timer (forearm, thigh). Finally, research your artist. Look at portfolios to find someone whose style matches your vision. A good artist will guide you through the process, offer advice, and ensure you're comfortable from start to finish. Remember to eat a good meal and stay hydrated before your appointment!`
+    },
+    {
+        id: 6,
+        title: 'Tattoo Pain Chart: What to Expect and Where',
+        author: 'Thomas Darrow',
+        date: 'September 10, 2023',
+        imageUrl: 'https://images.pexels.com/photos/4123735/pexels-photo-4123735.jpeg',
+        summary: 'Everyone\'s pain tolerance is different, but some spots are notoriously more sensitive than others. We break down the most and least painful places to get tattooed.',
+        content: `The question "does it hurt?" is the most common one we hear. The short answer is yes, but the level of pain varies. Generally, areas with more flesh and muscle (like the outer arm, calf, or thigh) are less painful. The skin is tougher and there's more padding over the bone.\n\nAreas with thin skin close to bone (like the ribs, spine, feet, hands, and sternum) are typically the most painful. Nerves and bone are closer to the surface, creating a more intense sensation. Ultimately, pain is subjective. What one person finds unbearable, another might tolerate easily. Our advice? Don't let fear of pain stop you from getting a tattoo in a spot you love. The discomfort is temporary, but the art is forever.`
+    },
+    {
+        id: 7,
+        title: 'The Art of the Cover-Up: Breathing New Life into Old Ink',
+        author: 'Thomas Darrow',
+        date: 'September 2, 2023',
+        imageUrl: 'https://images.pexels.com/photos/4125680/pexels-photo-4125680.jpeg',
+        summary: 'Have a tattoo you regret? A cover-up can be a transformative experience. Learn about the process, the challenges, and the incredible results that are possible.',
+        content: `A cover-up tattoo is a special kind of challenge that requires both technical skill and creative problem-solving. It's not as simple as just tattooing over an old design. The new design must be strategically planned to camouflage the old one, often using darker pigments and clever placement of lines and shading.\n\nBlack and grey tattoos are generally easier to cover than old color tattoos. The new design will almost always need to be significantly larger than the original piece. It's a collaborative process where flexibility is key. You might have to adjust your ideal design to what is possible. But with the right artist, you can transform a piece you dislike into something you are proud to show off.`
+    },
+    {
+        id: 8,
+        title: 'Watercolor Tattoos: A Vibrant and Ethereal Style',
+        author: 'Thomas Darrow',
+        date: 'August 25, 2023',
+        imageUrl: 'https://images.pexels.com/photos/3657570/pexels-photo-3657570.jpeg',
+        summary: 'Mimicking the soft blends and fluid drips of watercolor paintings, this style is a stunning way to wear color. We explore the techniques and beauty of watercolor tattoos.',
+        content: `Watercolor tattoos are a relatively new and exciting style that breaks traditional tattoo rules. Instead of solid outlines, they often feature soft color gradients, painterly splashes, and a sense of movement and fluidity. The goal is to replicate the look of a watercolor painting on canvas.\n\nThis style requires a skilled artist who understands color theory and how to blend pigments on skin. While some designs are purely abstract splashes of color, many combine watercolor effects with more traditional linework to create a striking fusion of styles. When done correctly, a watercolor tattoo is a breathtaking piece of wearable art that is both delicate and bold.`
+    },
+    {
+        id: 9,
+        title: 'Long-Term Tattoo Care: Keeping Your Ink Vibrant for Decades',
+        author: 'Thomas Darrow',
+        date: 'August 18, 2023',
+        imageUrl: 'https://images.pexels.com/photos/4123898/pexels-photo-4123898.jpeg',
+        summary: 'Your tattoo is a lifelong investment. Learn the secrets to long-term aftercare, from sun protection to proper moisturizing, to ensure your art stays sharp and bright.',
+        content: `The initial healing period is critical, but caring for your tattoo is a lifelong commitment. The single biggest enemy of a tattoo is the sun. UV rays break down ink pigments, causing them to fade and blur over time. Always apply a high-SPF sunscreen to your tattoos when they will be exposed to the sun.\n\nMoisturizing is also key. Healthy, hydrated skin displays ink much better than dry, flaky skin. Use a quality, fragrance-free lotion regularly to keep the skin supple and the tattoo looking its best. With proper sun protection and regular moisturizing, your tattoo will remain a vibrant and sharp piece of art for many years to come.`
+    },
+    {
+        id: 10,
+        title: 'The Enduring Grace of Japanese Tattoos (Irezumi)',
+        author: 'Thomas Darrow',
+        date: 'August 11, 2023',
+        imageUrl: 'https://images.pexels.com/photos/6593383/pexels-photo-6593383.jpeg',
+        summary: 'Delve into the rich history and deep symbolism of traditional Japanese tattooing. From dragons and koi to chrysanthemums, every element tells a powerful story.',
+        content: `Irezumi, the traditional art of Japanese tattooing, is a style steeped in history, mythology, and symbolism. These tattoos are known for their large scale, often covering entire limbs or the back, and their distinctive imagery. Every element has a specific meaning and place within the tradition.\n\nCommon motifs include dragons (representing strength and good fortune), koi fish (courage and perseverance), tigers (protection), and flowers like peonies and cherry blossoms. The compositions are dynamic, often featuring backgrounds of wind bars, water, and clouds to create a unified, flowing piece. A traditional Japanese tattoo is more than just a collection of images; it is a single, cohesive narrative told on the skin.`
+    },
+    {
+        id: 11,
+        title: 'Realism Tattoos: Capturing Life on Skin',
+        author: 'Thomas Darrow',
+        date: 'August 4, 2023',
+        imageUrl: 'https://images.pexels.com/photos/7147782/pexels-photo-7147782.jpeg',
+        summary: 'From lifelike portraits to breathtaking nature scenes, realism tattoos are a testament to technical skill. Discover what it takes to create these hyper-realistic masterpieces.',
+        content: `Realism tattoos aim to replicate a subject—be it a person, animal, or object—as accurately as a photograph. This style requires immense technical proficiency, a deep understanding of light and shadow, and meticulous attention to detail. Artists use a range of needle groupings and shading techniques to create smooth gradients, textures, and depth.\n\nBoth color realism and black and grey realism are popular. Portraits of loved ones or famous figures are common requests, as are depictions of wildlife and nature. A well-executed realism tattoo is a jaw-dropping piece of art that seems to come to life on the skin, showcasing the absolute peak of an artist's skill.`
+    },
+    {
+        id: 12,
+        title: 'Tattoo Studio Etiquette: How to Be a Great Client',
+        author: 'Thomas Darrow',
+        date: 'July 28, 2023',
+        imageUrl: 'https://images.pexels.com/photos/2087995/pexels-photo-2087995.jpeg',
+        summary: 'A little preparation and good manners go a long way. Here are some simple tips on studio etiquette that will make your tattoo experience smoother for both you and your artist.',
+        content: `Your relationship with your tattoo artist is a partnership, and being a good client helps ensure the best possible outcome. First, trust your artist. You chose them for their skill, so be open to their professional advice on design and placement. Second, practice good hygiene. Shower before your appointment and wear clean, comfortable clothing.\n\nDuring the session, try to sit as still as possible and let your artist focus. If you need a break, just ask. Don't bring a large entourage; most studios have limited space. And finally, don't haggle over the price. Good tattoos are an investment in permanent art. Following these simple rules of etiquette shows respect for the artist and the craft.`
+    },
+    {
+        id: 13,
+        title: 'The Meaning of Mandalas: Sacred Geometry in Tattooing',
+        author: 'Thomas Darrow',
+        date: 'July 21, 2023',
+        imageUrl: 'https://images.pexels.com/photos/4123757/pexels-photo-4123757.jpeg',
+        summary: 'More than just a beautiful pattern, the mandala is a spiritual symbol representing the universe. Explore the history and meaning behind these intricate and popular tattoo designs.',
+        content: `The mandala is a spiritual and ritual symbol in Hinduism and Buddhism, representing the universe. In tattooing, it has become a popular choice for its intricate beauty and deep spiritual meaning. A mandala's circular design symbolizes balance, eternity, and perfection.\n\nThese designs are often created with complex geometric patterns, dots, and lines that radiate from a central point. They can be purely ornamental or incorporate other symbols like flowers (especially the lotus) to add further layers of meaning. A mandala tattoo is a meditative piece, a visual representation of harmony and inner peace that is both aesthetically pleasing and spiritually resonant.`
     }
 ];
 
@@ -225,14 +377,32 @@ const Header: React.FC<{ setPage: (page: string) => void }> = ({ setPage }) => {
 
 const Hero: React.FC = () => {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [offset, setOffset] = useState(0);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoaded(true), 300);
-        return () => clearTimeout(timer);
+        const handleScroll = () => {
+            if (window.pageYOffset < window.innerHeight) {
+                setOffset(window.pageYOffset);
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+        
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('scroll', handleScroll);
+        };
     }, []);
 
     return (
-        <section id="home" className="h-screen bg-cover bg-top flex items-center justify-center relative" style={{ backgroundImage: `url(https://i.imgur.com/mCs8pum.png)` }}>
+        <section 
+            id="home" 
+            className="h-screen bg-cover bg-top bg-fixed flex items-center justify-center relative" 
+            style={{ 
+                backgroundImage: `url(https://i.imgur.com/mCs8pum.png)`,
+                backgroundPositionY: `${offset * 0.5}px` 
+            }}
+        >
             <div className="absolute inset-0 bg-black opacity-50"></div>
             <div className="text-center z-10 p-4">
                 <h2 className={`text-5xl md:text-7xl lg:text-8xl text-white font-pirata tracking-wider leading-tight transition-all duration-700 ease-out delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -256,87 +426,194 @@ const Hero: React.FC = () => {
     );
 };
 
-const Section: React.FC<{id: string, title: string, subtitle: string, children: React.ReactNode, bgClass?: string}> = ({id, title, subtitle, children, bgClass = 'bg-transparent'}) => (
-    <section id={id} className={`py-20 md:py-28 ${bgClass}`}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12 md:mb-16">
-                 <h2 className="text-4xl md:text-5xl font-pirata text-white tracking-wider">{title}</h2>
-                 <p className="mt-2 text-xl text-gray-400">{subtitle}</p>
-                 <div className="mt-4 w-24 h-1 bg-red-700 mx-auto"></div>
-            </div>
-            {children}
-        </div>
-    </section>
-);
-
-
-const About: React.FC = () => (
-    <Section id="about" title="The Studio" subtitle="Welcome to Corrupt Ink" bgClass="bg-black/20">
-        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            <div className="lg:w-1/2">
-                <img src="https://i.imgur.com/40NnMLj.png" alt="Inside Corrupt Ink studio" className="rounded-lg shadow-2xl" />
-            </div>
-            <div className="lg:w-1/2 text-xl text-gray-300 space-y-4 text-center lg:text-left">
-                <p>
-                    Established in 2013 in the heart of Tucson, AZ, Corrupt Ink was born from a passion for rebellion and fine art. We believe a tattoo is more than just ink on skin; it's a profound form of self-expression, a badge of honor, a memory immortalized. Our studio is a sanctuary for creativity, where your vision is our command.
-                </p>
-                <p>
-                    We uphold the highest standards of safety and hygiene, using state-of-the-art equipment and single-use needles. Our artists are not just technicians; they are visionaries dedicated to their craft, continuously pushing the boundaries of what's possible in tattoo artistry. Come share your story with us.
-                </p>
-            </div>
-        </div>
-    </Section>
-);
-
-const Artists: React.FC = () => (
-    <Section id="artists" title="The Artist" subtitle="Master of the Craft">
-        <div className="flex justify-center">
-            {artists.map(artist => (
-                <div key={artist.id} className="bg-zinc-800/50 rounded-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300 shadow-lg max-w-lg">
-                    <img src={artist.imageUrl} alt={`Portrait of ${artist.name}`} className="w-full h-96 object-cover" />
-                    <div className="p-8 text-center">
-                        <h3 className="text-3xl font-pirata text-white tracking-wide">{artist.name}</h3>
-                        <p className="text-red-500 font-bold mt-2 text-xl">{artist.specialty}</p>
-                        <p className="text-gray-300 mt-4 text-lg">{artist.bio}</p>
-                    </div>
+const Section: React.FC<{id: string, title: string, subtitle: string, children: React.ReactNode, bgClass?: string}> = ({id, title, subtitle, children, bgClass = 'bg-transparent'}) => {
+    const titleRef = useRef<HTMLDivElement>(null);
+    const isTitleVisible = useOnScreen(titleRef);
+    
+    return (
+        <section id={id} className={`py-20 md:py-28 ${bgClass}`}>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div ref={titleRef} className={`text-center mb-12 md:mb-16 reveal ${isTitleVisible ? 'visible' : ''}`}>
+                     <h2 className="text-4xl md:text-5xl font-pirata text-white tracking-wider">{title}</h2>
+                     <p className="mt-2 text-xl text-gray-400">{subtitle}</p>
+                     <div className="mt-4 w-24 h-1 bg-red-700 mx-auto"></div>
                 </div>
-            ))}
-        </div>
-    </Section>
-);
+                {children}
+            </div>
+        </section>
+    );
+};
 
-const Gallery: React.FC = () => (
-    <Section id="gallery" title="Our Work" subtitle="A Glimpse into Our Portfolio" bgClass="bg-black/20">
-        {galleryImages.length > 0 ? (
-            <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-                {galleryImages.map(image => (
-                    <div key={image.id} className="overflow-hidden rounded-lg shadow-lg break-inside-avoid">
-                        <img src={image.src} alt={image.alt} className="w-full h-auto object-cover transform hover:scale-105 transition-transform duration-300" loading="lazy" />
+
+const About: React.FC = () => {
+    const contentRef = useRef<HTMLDivElement>(null);
+    const isContentVisible = useOnScreen(contentRef);
+
+    return (
+        <Section id="about" title="The Studio" subtitle="Welcome to Corrupt Ink" bgClass="bg-black/20">
+            <div ref={contentRef} className={`flex flex-col lg:flex-row items-center gap-10 lg:gap-16 reveal ${isContentVisible ? 'visible' : ''}`}>
+                <div className="lg:w-1/2">
+                    <img src="https://i.imgur.com/40NnMLj.png" alt="Inside Corrupt Ink studio" className="rounded-lg shadow-2xl" />
+                </div>
+                <div className="lg:w-1/2 text-xl text-gray-300 space-y-4 text-center lg:text-left">
+                    <p>
+                        Established in 2013 in the heart of Tucson, AZ, Corrupt Ink was born from a passion for rebellion and fine art. We believe a tattoo is more than just ink on skin; it's a profound form of self-expression, a badge of honor, a memory immortalized. Our studio is a sanctuary for creativity, where your vision is our command.
+                    </p>
+                    <p>
+                        We uphold the highest standards of safety and hygiene, using state-of-the-art equipment and single-use needles. Our artists are not just technicians; they are visionaries dedicated to their craft, continuously pushing the boundaries of what's possible in tattoo artistry. Come share your story with us.
+                    </p>
+                </div>
+            </div>
+        </Section>
+    );
+};
+
+const Artists: React.FC = () => {
+    const contentRef = useRef<HTMLDivElement>(null);
+    const isContentVisible = useOnScreen(contentRef);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const card = e.currentTarget;
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+    };
+
+    return (
+        <Section id="artists" title="The Artist" subtitle="Master of the Craft">
+            <div ref={contentRef} className={`flex justify-center reveal ${isContentVisible ? 'visible' : ''}`}>
+                {artists.map(artist => (
+                    <div 
+                        key={artist.id} 
+                        onMouseMove={handleMouseMove}
+                        className="glow-card bg-zinc-800/50 rounded-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300 shadow-lg max-w-lg"
+                    >
+                        <img src={artist.imageUrl} alt={`Portrait of ${artist.name}`} className="w-full h-96 object-cover" />
+                        <div className="p-8 text-center">
+                            <h3 className="text-3xl font-pirata text-white tracking-wide">{artist.name}</h3>
+                            <p className="text-red-500 font-bold mt-2 text-xl">{artist.specialty}</p>
+                            <p className="text-gray-300 mt-4 text-lg">{artist.bio}</p>
+                        </div>
                     </div>
                 ))}
             </div>
-        ) : (
-            <div className="text-center text-gray-400 mt-8">
-                <p className="text-xl">Our portfolio is currently being updated.</p>
-                <p>Please check back soon to see our latest work!</p>
+        </Section>
+    );
+};
+
+const Lightbox: React.FC<{ src: string; alt: string; onClose: () => void }> = ({ src, alt, onClose }) => {
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = 'unset';
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-label={alt}
+        >
+            <div
+                className="relative max-w-5xl w-full max-h-[90vh] flex justify-center"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <img src={src} alt={alt} className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
             </div>
-        )}
-    </Section>
-);
+            <button
+                onClick={onClose}
+                className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Close image viewer"
+            >
+                <CloseIcon className="h-8 w-8" />
+            </button>
+        </div>
+    );
+};
+
+const Gallery: React.FC = () => {
+    const [selectedImage, setSelectedImage] = useState<{ src: string; alt: string } | null>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const isContentVisible = useOnScreen(contentRef);
+
+    return (
+        <>
+            <Section id="gallery" title="Our Work" subtitle="A Glimpse into Our Portfolio" bgClass="bg-black/20">
+                <div ref={contentRef} className={`reveal ${isContentVisible ? 'visible' : ''}`}>
+                    {galleryImages.length > 0 ? (
+                        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                            {galleryImages.map(image => (
+                                <div key={image.id} className="overflow-hidden rounded-lg shadow-lg break-inside-avoid">
+                                    <button
+                                        onClick={() => setSelectedImage(image)}
+                                        className="block w-full"
+                                        aria-label={`View image: ${image.alt}`}
+                                    >
+                                        <img
+                                            src={image.src}
+                                            alt={image.alt}
+                                            className="w-full h-auto object-cover transform hover:scale-105 transition-transform duration-300 cursor-zoom-in"
+                                            loading="lazy"
+                                        />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-gray-400 mt-8">
+                            <p className="text-xl">Our portfolio is currently being updated.</p>
+                            <p>Please check back soon to see our latest work!</p>
+                        </div>
+                    )}
+                </div>
+            </Section>
+            {selectedImage && (
+                <Lightbox src={selectedImage.src} alt={selectedImage.alt} onClose={() => setSelectedImage(null)} />
+            )}
+        </>
+    );
+};
 
 const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const isContentVisible = useOnScreen(contentRef);
 
     const toggleFaq = (index: number) => {
         setOpenIndex(openIndex === index ? null : index);
     };
 
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const card = e.currentTarget;
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+    };
+
     return (
         <main className="pt-24">
             <Section id="faq" title="Frequently Asked Questions" subtitle="Your Guide to Tattoos">
-                <div className="max-w-4xl mx-auto space-y-4">
+                <div ref={contentRef} className={`max-w-4xl mx-auto space-y-4 reveal ${isContentVisible ? 'visible' : ''}`}>
                     {faqData.map((item, index) => (
-                        <div key={index} className="bg-zinc-800/50 rounded-lg overflow-hidden transition-all duration-300">
+                        <div 
+                            key={index} 
+                            onMouseMove={handleMouseMove}
+                            className="glow-card bg-zinc-800/50 rounded-lg overflow-hidden transition-all duration-300"
+                        >
                             <button
                                 onClick={() => toggleFaq(index)}
                                 className="w-full flex justify-between items-center p-5 md:p-6 text-left focus:outline-none"
@@ -345,7 +622,7 @@ const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 <h3 className="text-xl font-semibold text-white">{item.question}</h3>
                                 <ChevronDownIcon className={`w-6 h-6 text-red-500 transition-transform duration-300 flex-shrink-0 ${openIndex === index ? 'rotate-180' : ''}`} />
                             </button>
-                            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${openIndex === index ? 'max-h-96' : 'max-h-0'}`}>
+                            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${openIndex === index ? 'max-h-[500px]' : 'max-h-0'}`}>
                                <div className="px-5 md:px-6 pb-5 text-gray-300 text-lg">
                                    <p>{item.answer}</p>
                                </div>
@@ -365,10 +642,21 @@ const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 const BlogPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const isContentVisible = useOnScreen(contentRef);
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [selectedPost]);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const card = e.currentTarget;
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+    };
 
     // If a post is selected, show the article view
     if (selectedPost) {
@@ -398,9 +686,13 @@ const BlogPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
         <main className="pt-24">
             <Section id="blog" title="Corrupt Ink Blog" subtitle="Stories, Insights, and Aftercare">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div ref={contentRef} className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 reveal ${isContentVisible ? 'visible' : ''}`}>
                     {blogPosts.map(post => (
-                        <div key={post.id} className="bg-zinc-800/50 rounded-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300 shadow-lg flex flex-col">
+                        <div 
+                            key={post.id} 
+                            onMouseMove={handleMouseMove}
+                            className="glow-card bg-zinc-800/50 rounded-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300 shadow-lg flex flex-col"
+                        >
                             <img src={post.imageUrl} alt={post.title} className="w-full h-56 object-cover" />
                             <div className="p-6 flex flex-col flex-grow">
                                 <p className="text-base text-gray-400">{post.date} &bull; {post.author}</p>
@@ -647,6 +939,9 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         } else {
             const birthDate = new Date(formData.dob);
             const today = new Date();
+            // Set hours to 0 to compare dates only
+            birthDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
             const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
             if (birthDate > eighteenYearsAgo) {
                 newErrors.dob = "You must be at least 18 years old.";
@@ -671,13 +966,18 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (validateForm()) {
             setIsSubmitting(true);
             
-            // In a real-world application, this is where you would send the form data
-            // to a backend server or a third-party email service (like EmailJS).
-            // The data, including the base64 image strings for ID and signature,
-            // would be sent in a POST request.
-            //
-            // For this demonstration, we'll simulate the network request.
-            console.log("Simulating submission for: corruptink@gmail.com", { formData, consents, signature, idFront, idBack });
+            // This is a simulation. In a real app, you would use a backend service
+            // to securely send an email or store the data. A frontend-only app
+            // cannot send emails directly without exposing credentials.
+            console.log("Simulating sending consent form to: corruptink@gmail.com");
+            console.log({
+                ...formData,
+                consents,
+                // In a real submission, you'd send the full base64 strings
+                signature: signature ? "Signature captured" : "No signature",
+                idFront: idFront ? "ID Front captured" : "No ID Front",
+                idBack: idBack ? "ID Back captured" : "No ID Back"
+            });
     
             setTimeout(() => {
                 setIsSubmitted(true);
@@ -846,7 +1146,7 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div className="w-full md:w-auto text-center">
                             <button 
                                 type="submit" 
-                                disabled={!idFront || !idBack || isSubmitting}
+                                disabled={isSubmitting}
                                 className="w-full md:w-auto bg-red-700 text-white uppercase font-bold tracking-widest py-4 px-12 hover:bg-red-600 transition-all duration-300 text-xl rounded-md disabled:bg-zinc-600 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center min-w-[200px]"
                             >
                                 {isSubmitting ? (
@@ -861,11 +1161,6 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     'Submit Form'
                                 )}
                             </button>
-                            {(!idFront || !idBack) && !isSubmitting && (
-                                <p className="text-yellow-500 text-sm mt-2">
-                                    Please upload photos of your ID to submit.
-                                </p>
-                            )}
                              {submitError && <p className="mt-4 text-center text-red-500">{submitError}</p>}
                         </div>
                          <button type="button" onClick={onBack} className="w-full md:w-auto bg-zinc-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-zinc-600 transition-colors duration-300 text-lg rounded-md">
@@ -938,9 +1233,19 @@ const ScrollToTopButton: React.FC = () => {
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+      // Basic check for touch device
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+          setIsTouchDevice(true);
+          document.body.style.cursor = 'auto';
+      }
+  }, []);
 
   return (
     <div className="bg-zinc-900 text-gray-200">
+      {!isTouchDevice && <CursorTrail />}
       <Header setPage={setCurrentPage} />
       {currentPage === 'home' && (
         <main>
