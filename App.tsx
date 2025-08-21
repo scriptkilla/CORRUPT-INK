@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { galleryImages } from './gallery-images';
-import { GoogleGenAI } from "@google/genai";
 
 // --- TYPES ---
 interface Artist {
@@ -161,7 +160,6 @@ const Header: React.FC<{ setPage: (page: string) => void }> = ({ setPage }) => {
         { name: 'About Us', href: '#about' },
         { name: 'Artists', href: '#artists' },
         { name: 'Gallery', href: '#gallery' },
-        { name: 'Create', href: '#create' },
     ];
     
     const NavLink: React.FC<{ href: string, page: string, children: React.ReactNode, isPrimary?: boolean }> = ({ href, page, children, isPrimary = true }) => (
@@ -196,6 +194,7 @@ const Header: React.FC<{ setPage: (page: string) => void }> = ({ setPage }) => {
                             <div className="flex justify-end mt-1">
                                 <NavLink href="#" page="blog" isPrimary={false}>Blog</NavLink>
                                 <NavLink href="#" page="faq" isPrimary={false}>FAQ</NavLink>
+                                <NavLink href="#" page="consent" isPrimary={false}>Consent</NavLink>
                             </div>
                         </div>
                     </div>
@@ -216,6 +215,7 @@ const Header: React.FC<{ setPage: (page: string) => void }> = ({ setPage }) => {
                         ))}
                          <MobileNavLink href="#" page="blog">Blog</MobileNavLink>
                         <MobileNavLink href="#" page="faq">FAQ</MobileNavLink>
+                        <MobileNavLink href="#" page="consent">Consent Form</MobileNavLink>
                     </nav>
                 </div>
             )}
@@ -324,228 +324,6 @@ const Gallery: React.FC = () => (
     </Section>
 );
 
-const CreateTattoo: React.FC = () => {
-    const [prompt, setPrompt] = useState('');
-    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-
-    const [ideaPrompt, setIdeaPrompt] = useState('');
-    const [generatedIdeas, setGeneratedIdeas] = useState<string | null>(null);
-    const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
-    const [ideaError, setIdeaError] = useState<string | null>(null);
-    
-    const loadingMessages = [
-        "Warming up the tattoo machine...",
-        "Sketching your masterpiece...",
-        "Mixing the perfect ink...",
-        "Consulting the digital spirits...",
-        "Bringing your vision to life..."
-    ];
-
-    useEffect(() => {
-        if (isLoading) {
-            const interval = setInterval(() => {
-                setCurrentMessageIndex(prevIndex => (prevIndex + 1) % loadingMessages.length);
-            }, 2500);
-            return () => clearInterval(interval);
-        }
-    }, [isLoading]);
-    
-    const handleGenerateIdeas = async () => {
-        if (!ideaPrompt) {
-            setIdeaError('Please enter a topic for ideas.');
-            return;
-        }
-        setIsGeneratingIdeas(true);
-        setIdeaError(null);
-        setGeneratedIdeas(null);
-
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: `Based on the concept "${ideaPrompt}", generate 3 distinct and creative tattoo ideas. For each idea, provide a short, evocative description. Format the response as a numbered list (e.g., "1. Idea description").`,
-                config: {
-                    systemInstruction: "You are an expert tattoo consultant specializing in symbolism and creative concepts. Provide thoughtful, inspiring, and concise ideas for tattoos. Your tone is knowledgeable, slightly edgy, and creative, matching the vibe of a high-end tattoo studio.",
-                }
-            });
-            setGeneratedIdeas(response.text);
-        } catch (err) {
-            console.error(err);
-            setIdeaError('The AI consultant is busy. Please try again in a moment.');
-        } finally {
-            setIsGeneratingIdeas(false);
-        }
-    };
-
-    const parseAndRenderIdeas = (text: string) => {
-        return text.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0 && /^\d+\./.test(line))
-            .map((idea, index) => {
-                const ideaText = idea.replace(/^\d+\.\s*/, '').trim();
-                return (
-                    <div key={index} className="flex items-center justify-between gap-3 p-2 rounded-md hover:bg-zinc-700/50 transition-colors">
-                        <p className="text-gray-300 flex-grow text-lg">{idea}</p>
-                        <button 
-                            onClick={() => setPrompt(ideaText)}
-                            className="bg-red-800 text-white text-sm font-bold py-1 px-2 rounded hover:bg-red-700 transition-colors flex-shrink-0"
-                            title="Use this idea for the image generator"
-                            aria-label={`Use idea: ${ideaText}`}
-                        >
-                            Use Idea
-                        </button>
-                    </div>
-                );
-            });
-    };
-
-    const handleGenerateClick = async () => {
-        if (!prompt) {
-            setError('Please describe the tattoo you want to create.');
-            return;
-        }
-        setIsLoading(true);
-        setError(null);
-        setGeneratedImage(null);
-
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const fullPrompt = `A high-quality, detailed tattoo design of ${prompt}. The design must be centered on a clean, solid white background, suitable for a tattoo flash sheet.`;
-            
-            const response = await ai.models.generateImages({
-                model: 'imagen-3.0-generate-002',
-                prompt: fullPrompt,
-                config: {
-                  numberOfImages: 1,
-                  outputMimeType: 'image/jpeg',
-                  aspectRatio: '1:1',
-                },
-            });
-
-            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-            const imageUrl = `data:image/jpeg;base64,${base64ImageBytes}`;
-            setGeneratedImage(imageUrl);
-
-        } catch (err) {
-            console.error(err);
-            setError('The AI is a bit busy. Please try again in a moment.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handlePresetClick = (style: string) => {
-        setPrompt(prev => prev ? `${prev}, in a ${style} style` : `A tattoo in a ${style} style`);
-    };
-
-    const presets = ["Neo Traditional", "Watercolor", "Realism", "Minimalist", "Black & Grey", "Japanese", "Cartoon", "Abstract"];
-
-    return (
-        <Section id="create" title="Create Your Tattoo" subtitle="Bring Your Vision to Life with AI">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                <div className="space-y-6">
-                    <div>
-                        <label htmlFor="idea-prompt" className="block text-gray-300 mb-2 font-bold text-xl">1. Get Inspired</label>
-                        <p className="text-gray-400 mb-3 text-base">Can't decide? Ask our AI consultant for ideas, concepts, or symbolism.</p>
-                        <textarea
-                            id="idea-prompt"
-                            rows={3}
-                            value={ideaPrompt}
-                            onChange={(e) => setIdeaPrompt(e.target.value)}
-                            placeholder="e.g., Tattoo ideas for a musician"
-                            className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
-                        />
-                         <button 
-                            onClick={handleGenerateIdeas} 
-                            disabled={isGeneratingIdeas}
-                            className="w-full mt-3 bg-zinc-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-zinc-600 transition-colors duration-300 text-lg rounded-md disabled:bg-zinc-800 disabled:cursor-not-allowed flex items-center justify-center"
-                        >
-                             {isGeneratingIdeas ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Consulting...
-                                </>
-                            ) : "Get Ideas"}
-                        </button>
-                        {ideaError && <p className="text-red-500 text-center font-semibold mt-2">{ideaError}</p>}
-                    </div>
-                    
-                    {generatedIdeas && (
-                        <div className="bg-zinc-800/50 p-4 rounded-lg space-y-2 animate-fade-in">
-                            <h4 className="font-bold text-white mb-2 text-xl">AI Suggestions:</h4>
-                            {parseAndRenderIdeas(generatedIdeas)}
-                        </div>
-                    )}
-
-                    <div className="border-b border-zinc-700 my-4"></div>
-
-                    <div>
-                        <label htmlFor="prompt" className="block text-gray-300 mb-2 font-bold text-xl">2. Describe Your Design</label>
-                        <textarea
-                            id="prompt"
-                            rows={5}
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="e.g., A majestic lion wearing a crown of roses"
-                            className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-gray-300 mb-3 font-bold text-xl">3. Add a Style:</label>
-                        <div className="flex flex-wrap gap-3">
-                            {presets.map(preset => (
-                                <button key={preset} onClick={() => handlePresetClick(preset.toLowerCase())} className="bg-zinc-700 text-white py-2 px-4 rounded-md hover:bg-zinc-600 transition-colors text-base">
-                                    {preset}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                     <button 
-                        onClick={handleGenerateClick} 
-                        disabled={isLoading}
-                        className="w-full bg-red-700 text-white uppercase font-bold tracking-widest py-4 px-12 hover:bg-red-600 transition-colors duration-300 text-xl rounded-md disabled:bg-red-900 disabled:cursor-not-allowed flex items-center justify-center"
-                    >
-                        {isLoading ? (
-                            <>
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Generating...
-                            </>
-                        ) : "Generate Ink"}
-                    </button>
-                    {error && <p className="text-red-500 text-center font-semibold mt-4">{error}</p>}
-                </div>
-
-                <div className="aspect-square bg-zinc-800/50 rounded-lg flex items-center justify-center p-4 border-2 border-dashed border-zinc-700">
-                    {isLoading && (
-                        <div className="text-center">
-                             <div className="w-16 h-16 border-4 border-red-500 border-dashed rounded-full animate-spin mx-auto"></div>
-                             <p className="mt-4 text-white text-xl font-semibold">{loadingMessages[currentMessageIndex]}</p>
-                        </div>
-                    )}
-                    {!isLoading && !generatedImage && (
-                        <div className="text-center text-gray-400">
-                           <p className="text-3xl font-pirata">Your AI Tattoo Awaits</p>
-                           <p className="text-lg">Describe your design and click "Generate Ink" to see it here.</p>
-                        </div>
-                    )}
-                    {generatedImage && (
-                        <img src={generatedImage} alt="AI generated tattoo design" className="w-full h-full object-contain rounded-md" />
-                    )}
-                </div>
-            </div>
-        </Section>
-    );
-};
-
 const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -648,6 +426,436 @@ const BlogPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
+const SignaturePad: React.FC<{ onEnd: (dataUrl: string) => void, onClear: () => void }> = ({ onEnd, onClear }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+    const isDrawingRef = useRef(false);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        // For high-DPI displays
+        const scale = window.devicePixelRatio;
+        canvas.width = canvas.offsetWidth * scale;
+        canvas.height = canvas.offsetHeight * scale;
+        
+        const context = canvas.getContext("2d");
+        if (!context) return;
+        
+        context.scale(scale, scale);
+        context.lineCap = "round";
+        context.strokeStyle = "white";
+        context.lineWidth = 2;
+        contextRef.current = context;
+    }, []);
+
+    const getCoords = (event: React.MouseEvent | React.TouchEvent): {x: number, y: number} | undefined => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        if ('touches' in event.nativeEvent) {
+             return {
+                x: event.nativeEvent.touches[0].clientX - rect.left,
+                y: event.nativeEvent.touches[0].clientY - rect.top
+            };
+        }
+        return {
+            x: event.nativeEvent.clientX - rect.left,
+            y: event.nativeEvent.clientY - rect.top
+        };
+    };
+
+    const startDrawing = (event: React.MouseEvent | React.TouchEvent) => {
+        const context = contextRef.current;
+        const coords = getCoords(event);
+        if (!context || !coords) return;
+        
+        context.beginPath();
+        context.moveTo(coords.x, coords.y);
+        isDrawingRef.current = true;
+    };
+
+    const stopDrawing = () => {
+        const context = contextRef.current;
+        if (!context) return;
+
+        context.closePath();
+        isDrawingRef.current = false;
+        
+        const canvas = canvasRef.current;
+        if (canvas) {
+            onEnd(canvas.toDataURL('image/png'));
+        }
+    };
+
+    const draw = (event: React.MouseEvent | React.TouchEvent) => {
+        if (!isDrawingRef.current) {
+            return;
+        }
+        event.preventDefault();
+        
+        const context = contextRef.current;
+        const coords = getCoords(event);
+        if (!context || !coords) return;
+        
+        context.lineTo(coords.x, coords.y);
+        context.stroke();
+    };
+
+    const handleClear = () => {
+        const canvas = canvasRef.current;
+        const context = contextRef.current;
+        if (canvas && context) {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            onClear();
+        }
+    };
+
+    return (
+        <div className="w-full">
+            <div className="relative w-full h-48 bg-zinc-800 border-2 border-dashed border-zinc-600 rounded-lg overflow-hidden touch-none">
+                <canvas
+                    ref={canvasRef}
+                    className="absolute top-0 left-0 w-full h-full"
+                    onMouseDown={startDrawing}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    onMouseMove={draw}
+                    onTouchStart={startDrawing}
+                    onTouchEnd={stopDrawing}
+                    onTouchMove={draw}
+                />
+            </div>
+            <button type="button" onClick={handleClear} className="w-full mt-2 bg-zinc-700 text-white uppercase font-bold tracking-widest py-2 px-6 hover:bg-zinc-600 transition-colors duration-300 text-sm rounded-md">
+                Clear Signature
+            </button>
+        </div>
+    );
+};
+
+const CameraModal: React.FC<{ onCapture: (dataUrl: string) => void; onClose: () => void; }> = ({ onCapture, onClose }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+                streamRef.current = stream;
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                setError("Could not access camera. Please check your browser/system permissions and try again.");
+            }
+        };
+
+        startCamera();
+
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, []);
+
+    const handleCaptureClick = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+            if (context) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                onCapture(dataUrl);
+            }
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4" role="dialog" aria-modal="true">
+            <div className="bg-zinc-900 rounded-lg p-4 max-w-2xl w-full relative border border-zinc-700 shadow-2xl">
+                <h3 className="text-xl text-center text-white mb-4 font-semibold">Position your ID within the frame</h3>
+                {error ? (
+                    <div className="aspect-video bg-zinc-800 flex items-center justify-center rounded-md">
+                        <p className="text-red-500 text-center max-w-sm">{error}</p>
+                    </div>
+                ) : (
+                    <div className="relative aspect-video">
+                        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-contain rounded-md bg-black"></video>
+                        <div className="absolute inset-0 border-4 border-dashed border-white/50 rounded-md pointer-events-none"></div>
+                    </div>
+                )}
+                <canvas ref={canvasRef} className="hidden"></canvas>
+                <div className="flex justify-center items-center gap-4 mt-4">
+                    <button type="button" onClick={onClose} className="bg-zinc-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-zinc-600 transition-colors duration-300 text-lg rounded-md">
+                        Cancel
+                    </button>
+                    <button type="button" onClick={handleCaptureClick} disabled={!!error} className="bg-red-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-red-600 transition-colors duration-300 text-lg rounded-md disabled:bg-red-900 disabled:cursor-not-allowed">
+                        Take Picture
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const [formData, setFormData] = useState({
+        fullName: '',
+        dob: '',
+        phone: '',
+        email: '',
+        tattooDescription: '',
+        tattooPlacement: '',
+    });
+    const [consents, setConsents] = useState({
+        isOfAge: false,
+        isSober: false,
+        disclosedConditions: false,
+        understandsVariations: false,
+        understandsPermanence: false,
+        receivedAftercare: false,
+        releaseOfLiability: false,
+    });
+    const [signature, setSignature] = useState<string | null>(null);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [idFront, setIdFront] = useState<string | null>(null);
+    const [idBack, setIdBack] = useState<string | null>(null);
+    const [showCamera, setShowCamera] = useState(false);
+    const [cameraTarget, setCameraTarget] = useState<'front' | 'back' | null>(null);
+
+    const allConsentsChecked = Object.values(consents).every(Boolean);
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+        if (!formData.fullName) newErrors.fullName = "Full name is required.";
+        if (!formData.dob) {
+            newErrors.dob = "Date of birth is required.";
+        } else {
+            const birthDate = new Date(formData.dob);
+            const age = new Date().getFullYear() - birthDate.getFullYear();
+            const m = new Date().getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) {
+                if(age -1 < 18) newErrors.dob = "You must be at least 18 years old.";
+            } else {
+                if (age < 18) newErrors.dob = "You must be at least 18 years old.";
+            }
+        }
+        if (!formData.email) newErrors.email = "Email is required.";
+        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid.";
+        if (!formData.phone) newErrors.phone = "Phone number is required.";
+        if (!idFront || !idBack) newErrors.id = "Photos of the front and back of your ID are required.";
+        if (!formData.tattooDescription) newErrors.tattooDescription = "Tattoo description is required.";
+        if (!formData.tattooPlacement) newErrors.tattooPlacement = "Tattoo placement is required.";
+        if (!allConsentsChecked) newErrors.consents = "You must agree to all terms.";
+        if (!signature) newErrors.signature = "Signature is required.";
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (validateForm()) {
+            console.log("Form Submitted", { formData, consents, signature, idFront, idBack });
+            setIsSubmitted(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleConsentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setConsents({ ...consents, [e.target.name]: e.target.checked });
+    };
+
+    const handleTakePhoto = (target: 'front' | 'back') => {
+        setCameraTarget(target);
+        setShowCamera(true);
+    };
+
+    const handleCapture = (dataUrl: string) => {
+        if (cameraTarget === 'front') {
+            setIdFront(dataUrl);
+        } else if (cameraTarget === 'back') {
+            setIdBack(dataUrl);
+        }
+        setShowCamera(false);
+        setCameraTarget(null);
+    };
+
+    if(isSubmitted) {
+        return (
+             <main className="pt-24">
+                <Section id="consent-success" title="Submission Successful" subtitle="Thank you!">
+                     <div className="max-w-4xl mx-auto bg-zinc-800/50 rounded-lg p-8 text-center animate-fade-in">
+                        <h3 className="text-3xl font-pirata text-white tracking-wide">Your consent form has been received.</h3>
+                        <p className="text-gray-300 mt-4 text-lg">We've received your information and look forward to seeing you for your appointment. If you have any questions, please don't hesitate to contact the studio.</p>
+                        <button onClick={onBack} className="mt-8 bg-red-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-red-600 transition-colors duration-300 text-lg rounded-md">
+                            Back to Home
+                        </button>
+                    </div>
+                </Section>
+            </main>
+        );
+    }
+    
+    const consentItems = [
+        { name: 'isOfAge', text: 'I confirm that I am over the age of 18.' },
+        { name: 'isSober', text: 'I am not under the influence of alcohol or drugs.' },
+        { name: 'disclosedConditions', text: 'I have informed my artist of any and all medical conditions that may affect the healing of my tattoo (e.g., allergies, skin conditions, pregnancy).' },
+        { name: 'understandsVariations', text: 'I understand that variations in color and design may exist between the tattoo art I have selected and the final tattoo on my skin.' },
+        { name: 'understandsPermanence', text: 'I acknowledge that a tattoo is a permanent change to my appearance and that there is no guarantee for its removal.' },
+        { name: 'receivedAftercare', text: 'I acknowledge that I have been given the full opportunity to ask any and all questions about the procedure and have received detailed aftercare instructions.' },
+        { name: 'releaseOfLiability', text: 'I release the artist and Corrupt Ink Tattoo Studio from any and all liabilities, claims, and demands of any kind, known or unknown, which may arise from the tattoo procedure.' },
+    ];
+
+    const formInputClasses = "block w-full bg-zinc-700 border border-zinc-600 rounded-lg py-3 px-4 text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600";
+    const formCheckboxClasses = "mt-1 h-5 w-5 flex-shrink-0 rounded border border-zinc-600 bg-zinc-700 accent-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 focus:ring-offset-zinc-800";
+
+    return (
+        <main className="pt-24">
+            <Section id="consent" title="Tattoo Consent & Release Form" subtitle="Please read carefully and fill out completely">
+                <form onSubmit={handleSubmit} noValidate className="max-w-4xl mx-auto bg-zinc-800/50 p-6 sm:p-8 rounded-lg space-y-8">
+                    
+                    {/* --- Client Information --- */}
+                    <fieldset>
+                        <legend className="text-xl font-bold text-white border-b border-zinc-700 pb-2 mb-6 w-full">Client Information</legend>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label htmlFor="fullName" className="block text-gray-300 mb-2 font-bold">Full Name</label>
+                                <input type="text" id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange} required className={formInputClasses} />
+                                {errors.fullName && <p className="mt-2 text-sm text-red-500">{errors.fullName}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="dob" className="block text-gray-300 mb-2 font-bold">Date of Birth</label>
+                                <input type="date" id="dob" name="dob" value={formData.dob} onChange={handleInputChange} required className={formInputClasses} />
+                                {errors.dob && <p className="mt-2 text-sm text-red-500">{errors.dob}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="phone" className="block text-gray-300 mb-2 font-bold">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} required className={formInputClasses} />
+                                {errors.phone && <p className="mt-2 text-sm text-red-500">{errors.phone}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="email" className="block text-gray-300 mb-2 font-bold">Email Address</label>
+                                <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required className={formInputClasses} />
+                                {errors.email && <p className="mt-2 text-sm text-red-500">{errors.email}</p>}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {/* --- ID Verification --- */}
+                    <fieldset>
+                         <legend className="text-xl font-bold text-white border-b border-zinc-700 pb-2 mb-6 w-full">Identification Verification</legend>
+                         <p className="text-gray-400 -mt-3 mb-6">Please provide a clear photo of the front and back of your government-issued ID.</p>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-gray-300 mb-2 font-bold">Front of ID</label>
+                                <div className="aspect-video bg-zinc-700 rounded-lg flex items-center justify-center p-1">
+                                    {idFront ? (
+                                        <img src={idFront} alt="Preview of front of ID" className="object-contain max-h-full max-w-full rounded-md" />
+                                    ) : ( <p className="text-gray-400">Photo Required</p> )}
+                                </div>
+                                <button type="button" onClick={() => handleTakePhoto('front')} className="w-full mt-2 bg-zinc-700 text-white uppercase font-bold tracking-widest py-2 px-6 hover:bg-zinc-600 transition-colors duration-300 text-sm rounded-md">
+                                    {idFront ? 'Retake Photo' : 'Take Photo'}
+                                </button>
+                            </div>
+                             <div>
+                                <label className="block text-gray-300 mb-2 font-bold">Back of ID</label>
+                                <div className="aspect-video bg-zinc-700 rounded-lg flex items-center justify-center p-1">
+                                     {idBack ? (
+                                        <img src={idBack} alt="Preview of back of ID" className="object-contain max-h-full max-w-full rounded-md" />
+                                    ) : ( <p className="text-gray-400">Photo Required</p> )}
+                                </div>
+                                <button type="button" onClick={() => handleTakePhoto('back')} className="w-full mt-2 bg-zinc-700 text-white uppercase font-bold tracking-widest py-2 px-6 hover:bg-zinc-600 transition-colors duration-300 text-sm rounded-md">
+                                     {idBack ? 'Retake Photo' : 'Take Photo'}
+                                </button>
+                            </div>
+                         </div>
+                         {errors.id && <p className="mt-4 text-sm text-center text-red-500">{errors.id}</p>}
+                    </fieldset>
+                    
+                    {/* --- Tattoo Information --- */}
+                    <fieldset>
+                        <legend className="text-xl font-bold text-white border-b border-zinc-700 pb-2 mb-6 w-full">Tattoo Information</legend>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div>
+                                <label htmlFor="tattooDescription" className="block text-gray-300 mb-2 font-bold">Brief Description of Tattoo</label>
+                                <textarea id="tattooDescription" name="tattooDescription" value={formData.tattooDescription} onChange={handleInputChange} rows={4} required className={formInputClasses}></textarea>
+                                {errors.tattooDescription && <p className="mt-2 text-sm text-red-500">{errors.tattooDescription}</p>}
+                            </div>
+                             <div>
+                                <label htmlFor="tattooPlacement" className="block text-gray-300 mb-2 font-bold">Placement on Body</label>
+                                <textarea id="tattooPlacement" name="tattooPlacement" value={formData.tattooPlacement} onChange={handleInputChange} rows={4} required className={formInputClasses}></textarea>
+                                 {errors.tattooPlacement && <p className="mt-2 text-sm text-red-500">{errors.tattooPlacement}</p>}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {/* --- Acknowledgements --- */}
+                    <fieldset>
+                        <legend className="text-xl font-bold text-white border-b border-zinc-700 pb-2 w-full">Acknowledgements & Consent</legend>
+                        <div className="space-y-4 mt-6">
+                            {consentItems.map(item => (
+                                 <label key={item.name} className="flex items-start space-x-3 cursor-pointer">
+                                    <input type="checkbox" name={item.name} checked={consents[item.name as keyof typeof consents]} onChange={handleConsentChange} required className={formCheckboxClasses} />
+                                    <span className="text-gray-300">{item.text}</span>
+                                </label>
+                            ))}
+                        </div>
+                        {errors.consents && <p className="mt-4 text-sm text-center text-red-500">{errors.consents}</p>}
+                    </fieldset>
+
+                    {/* --- Signature --- */}
+                     <fieldset>
+                        <legend className="text-xl font-bold text-white mb-2">Digital Signature</legend>
+                        <p className="text-gray-400 mb-3">By signing below, I agree that I have read and understood all parts of this consent and release form.</p>
+                        <SignaturePad onEnd={setSignature} onClear={() => setSignature(null)} />
+                        {errors.signature && <p className="mt-2 text-sm text-center text-red-500">{errors.signature}</p>}
+                    </fieldset>
+
+                    {/* --- Submission --- */}
+                    <div className="flex flex-col items-center gap-6 pt-4">
+                        <div className="w-full md:w-auto text-center">
+                            <button 
+                                type="submit" 
+                                disabled={!idFront || !idBack}
+                                className="w-full md:w-auto bg-red-700 text-white uppercase font-bold tracking-widest py-4 px-12 hover:bg-red-600 transition-colors duration-300 text-xl rounded-md disabled:bg-zinc-600 disabled:text-gray-400 disabled:cursor-not-allowed"
+                            >
+                                Submit Form
+                            </button>
+                            {(!idFront || !idBack) && (
+                                <p className="text-yellow-500 text-sm mt-2">
+                                    Please upload photos of your ID to submit.
+                                </p>
+                            )}
+                        </div>
+                         <button type="button" onClick={onBack} className="w-full md:w-auto bg-zinc-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-zinc-600 transition-colors duration-300 text-lg rounded-md">
+                            Back to Home
+                        </button>
+                    </div>
+
+                </form>
+            </Section>
+            {showCamera && <CameraModal onCapture={handleCapture} onClose={() => setShowCamera(false)} />}
+        </main>
+    );
+};
+
 
 const Footer: React.FC = () => (
     <footer className="bg-black py-12">
@@ -716,11 +924,11 @@ function App() {
             <About />
             <Artists />
             <Gallery />
-            <CreateTattoo />
         </main>
       )}
       {currentPage === 'faq' && <FAQPage onBack={() => setCurrentPage('home')} />}
       {currentPage === 'blog' && <BlogPage onBack={() => setCurrentPage('home')} />}
+      {currentPage === 'consent' && <ConsentFormPage onBack={() => setCurrentPage('home')} />}
       <Footer />
       <ScrollToTopButton />
     </div>

@@ -1,5 +1,7 @@
 {
   "name": "Corrupt Ink Tattoo Studio",
   "description": "A modern, edgy, and visually appealing website for the Corrupt Ink tattoo studio, designed to showcase artists, their work, and provide contact information. Inspired by a dark, professional aesthetic with bold color accents.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
