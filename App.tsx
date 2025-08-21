@@ -634,6 +634,8 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [idBack, setIdBack] = useState<string | null>(null);
     const [showCamera, setShowCamera] = useState(false);
     const [cameraTarget, setCameraTarget] = useState<'front' | 'back' | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const allConsentsChecked = Object.values(consents).every(Boolean);
 
@@ -644,12 +646,10 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             newErrors.dob = "Date of birth is required.";
         } else {
             const birthDate = new Date(formData.dob);
-            const age = new Date().getFullYear() - birthDate.getFullYear();
-            const m = new Date().getMonth() - birthDate.getMonth();
-            if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) {
-                if(age -1 < 18) newErrors.dob = "You must be at least 18 years old.";
-            } else {
-                if (age < 18) newErrors.dob = "You must be at least 18 years old.";
+            const today = new Date();
+            const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+            if (birthDate > eighteenYearsAgo) {
+                newErrors.dob = "You must be at least 18 years old.";
             }
         }
         if (!formData.email) newErrors.email = "Email is required.";
@@ -667,10 +667,23 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
         if (validateForm()) {
-            console.log("Form Submitted", { formData, consents, signature, idFront, idBack });
-            setIsSubmitted(true);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setIsSubmitting(true);
+            
+            // In a real-world application, this is where you would send the form data
+            // to a backend server or a third-party email service (like EmailJS).
+            // The data, including the base64 image strings for ID and signature,
+            // would be sent in a POST request.
+            //
+            // For this demonstration, we'll simulate the network request.
+            console.log("Simulating submission for: corruptink@gmail.com", { formData, consents, signature, idFront, idBack });
+    
+            setTimeout(() => {
+                setIsSubmitted(true);
+                setIsSubmitting(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 2000); // Simulate 2-second network delay
         }
     };
     
@@ -833,16 +846,27 @@ const ConsentFormPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div className="w-full md:w-auto text-center">
                             <button 
                                 type="submit" 
-                                disabled={!idFront || !idBack}
-                                className="w-full md:w-auto bg-red-700 text-white uppercase font-bold tracking-widest py-4 px-12 hover:bg-red-600 transition-colors duration-300 text-xl rounded-md disabled:bg-zinc-600 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                disabled={!idFront || !idBack || isSubmitting}
+                                className="w-full md:w-auto bg-red-700 text-white uppercase font-bold tracking-widest py-4 px-12 hover:bg-red-600 transition-all duration-300 text-xl rounded-md disabled:bg-zinc-600 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center min-w-[200px]"
                             >
-                                Submit Form
+                                {isSubmitting ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    'Submit Form'
+                                )}
                             </button>
-                            {(!idFront || !idBack) && (
+                            {(!idFront || !idBack) && !isSubmitting && (
                                 <p className="text-yellow-500 text-sm mt-2">
                                     Please upload photos of your ID to submit.
                                 </p>
                             )}
+                             {submitError && <p className="mt-4 text-center text-red-500">{submitError}</p>}
                         </div>
                          <button type="button" onClick={onBack} className="w-full md:w-auto bg-zinc-700 text-white uppercase font-bold tracking-widest py-3 px-8 hover:bg-zinc-600 transition-colors duration-300 text-lg rounded-md">
                             Back to Home
